@@ -1,7 +1,8 @@
 //窗口类实现1
-#include"base.h"
-#include"Window.h"
-#include"WindowsWindow.h"
+#include"RGS/Window.h"
+
+#include"RGS/Base.h"
+#include"RGS/WindowsWindow.h"
 
 namespace RGS
 {

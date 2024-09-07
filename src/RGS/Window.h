@@ -1,7 +1,7 @@
 #pragma once
+#include"RGS/InputCodes.h"
+#include"RGS/Framebuffer.h"
 #include <string>
-#include"InputCodes.h"
-#include"Framebuffer.h"
 
 namespace RGS {
 	class Window

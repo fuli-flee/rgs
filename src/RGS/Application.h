@@ -1,6 +1,12 @@
 #pragma once
+#include "RGS/Window.h"
+#include "RGS/Renderer.h"
+#include "RGS/Shaders/BlinnShader.h"
+
+
 #include <string>
-#include "Window.h"
+#include <vector>
+#include <chrono>
 
 namespace RGS
 {

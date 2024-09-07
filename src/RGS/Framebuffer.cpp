@@ -1,7 +1,7 @@
 //帧缓存
 #pragma once
-#include "Base.h"
-#include "Framebuffer.h"
+#include "RGS/Base.h"
+#include "RGS/Framebuffer.h"
 
 namespace RGS
 {
@@ -26,15 +26,16 @@ namespace RGS
 
 	void Framebuffer::SetColor(const int x, const int y, const Vec3& color) 
 	{
-		int index = GetPixelIndex(x, y);
-		if (index < m_PixelSize && index >= 0)
+		if ((x < 0) || (x >= m_Width) || (y < 0) || (y >= m_Height))
 		{
-			m_ColorBuffer[index] = color;//设置颜色
+			ASSERT(false);
+			return;
 		}
 		else  //为什么用else?
 				//因为如果index超出范围，说明是越界了，不应该再设置颜色了，所以用else
 		{
-			ASSERT(false);
+			int index = GetPixelIndex(x, y);
+			m_ColorBuffer[index] = color;//设置颜色
 		}
 	}
 

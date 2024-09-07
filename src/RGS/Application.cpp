@@ -1,8 +1,12 @@
 //应用程序类实现
-#include "Application.h"
+#include "RGS/Application.h"
 
-#include "Window.h"
-#include "FrameBuffer.h"
+#include "RGS/Base.h"
+#include "RGS/Window.h"
+#include "RGS/Framebuffer.h"
+#include "RGS/Maths.h"
+#include "RGS/Shaders/BlinnShader.h"
+#include "RGS/Renderer.h"
 
 #include<iostream>
 #include <string>
@@ -63,7 +67,19 @@ namespace RGS
 			std::cout << "S被按下" << std::endl;
 
 		Framebuffer framebuffer(m_Width, m_Height);
-		framebuffer.Clear({200. / 255., 224. / 255., 228. / 255.});
+		framebuffer.Clear();//200. / 255., 224. / 255., 228. / 255.
+
+		//在这里绘制一些东西
+		Program program(BlinnVertexShader, BlinnFragmentShader);
+		Triangle <BlinnVertex>tri;
+		tri[0].ModelPos = { 0.0f, 0.0f, -8.0f, 1.0f };//{ -10.0f, 10.0f, -10.0f, 1.0f }左上角
+		tri[1].ModelPos = { -10.0f, -10.0f, -10.0f, 1.0f };//{ -10.0f, -10.0f, -10.0f, 1.0f }左下角
+		tri[2].ModelPos = { 30.0f, -10.0f, -10.0f, 1.0f };//
+		BlinnUniforms uniforms;
+		uniforms.MVP = Mat4Perspective(90.0f / 180.0f * 3.1415926f, 1.0f, 0.1f, 10.0f);
+
+		Renderer::Draw(framebuffer,program,tri,uniforms);
+
 		m_Window->DrawFramebuffer(framebuffer);
 	}
 }

@@ -1,5 +1,6 @@
 #pragma once
-#include"Window.h"
+#include"RGS/Window.h"
+
 #include<string>
 #include<Windows.h>
 

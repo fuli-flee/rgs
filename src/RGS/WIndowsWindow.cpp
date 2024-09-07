@@ -1,10 +1,13 @@
 //窗口类实现2
 //ps: 这个类是Windows平台下的窗口类实现，主要是实现窗口的创建、显示、消息处理等功能
 //平台相关的实现都在这个类中，其他平台的实现类只需要继承这个类，并实现相关的平台相关的功能即可
-#include"Base.h"
-#include"Windows.h"
-#include "Math.h"
-#include"WindowsWindow.h"
+#include"RGS/WindowsWindow.h"
+
+#include"RGS/Base.h"
+#include"RGS/Window.h"
+#include "RGS/Maths.h"
+#include "Framebuffer.h"
+
 
 #include<windows.h>
 
