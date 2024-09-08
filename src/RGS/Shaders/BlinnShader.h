@@ -8,11 +8,15 @@ namespace RGS
 	struct BlinnVertex : public VertexBase
 	{
 
+	/*	//Blinn着色
+		Vec3 ModelNormal;
+		Vec2 TexCoord = { 0.0f, 0.0f };*/
 	};
 
 	struct BlinnVaryings : public VaryingsBase
 	{
-
+		/* //Blinn着色
+		Vec2 TexCoord;*/
 	};
 
 	struct BlinnUniforms : public UniformsBase

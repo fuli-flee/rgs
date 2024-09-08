@@ -34,6 +34,7 @@ namespace RGS
 		void OnCameraUpdate(float time);
 		void OnUpdate(float time);
 
+		void LordMash(const char* fileName);
 	private:
 		std::string m_Name;
 		int m_Width;
@@ -42,6 +43,10 @@ namespace RGS
 
 		Window* m_Window;
 		Camera m_Camera;
+
+		//Blinn×ÅÉ«
+		/*std::vector<Triangle<BlinnVertex>>m_Mesh;
+		BlinnUniforms m_Uniforms;*/
 	};
 
 }
