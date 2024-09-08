@@ -50,22 +50,16 @@ namespace RGS
         float x = left.Y * right.Z - left.Z * right.Y;
         float y = left.Z * right.X - left.X * right.Z;
         float z = left.X * right.Y - left.Y * right.X;
-        return Vec3(x, y, z);
+        return {x, y, z};
     }
 
-    Vec3 Normalize(const Vec3& v)//指定向量的方向，返回单位向量
+    Vec3 Normalize(const Vec3& v)//归一化
     {
-        float len = (float)sqrt(v.X * v.X + v.Y * v.Y + v.Z * v.Z);
+        float len = (float)std::sqrt(v.X * v.X + v.Y * v.Y + v.Z * v.Z);
+        ASSERT(len != 0);
         return v / len;
     }
 
-    Mat4::Mat4(const Vec4& v0, const Vec4& v1, const Vec4& v2, const Vec4& v3)
-    {
-        M[0][0] = v0.X; M[0][1] = v0.Y; M[0][2] = v0.Z; M[0][3] = v0.W;
-        M[1][0] = v1.X; M[1][1] = v1.Y; M[1][2] = v1.Z; M[1][3] = v1.W;
-        M[2][0] = v2.X; M[2][1] = v2.Y; M[2][2] = v2.Z; M[2][3] = v2.W;
-        M[3][0] = v3.X; M[3][1] = v3.Y; M[3][2] = v3.Z; M[3][3] = v3.W;
-    }
 
     Vec4 operator+ (const Vec4& left, const Vec4& right)
     {
@@ -89,7 +83,6 @@ namespace RGS
         return left * (1.0f / right);
     }
 
-
     Vec4 operator*(const Mat4& mat4, const Vec4& vec4)
     {
         Vec4 res;
@@ -98,7 +91,15 @@ namespace RGS
         res.Z = mat4.M[2][0] * vec4.X + mat4.M[2][1] * vec4.Y + mat4.M[2][2] * vec4.Z + mat4.M[2][3] * vec4.W;
         res.W = mat4.M[3][0] * vec4.X + mat4.M[3][1] * vec4.Y + mat4.M[3][2] * vec4.Z + mat4.M[3][3] * vec4.W;
         return res;
-    };
+    }
+
+    Mat4::Mat4(const Vec4& v0, const Vec4& v1, const Vec4& v2, const Vec4& v3)
+    {
+        M[0][0] = v0.X; M[1][0] = v0.Y; M[2][0] = v0.Z; M[3][0] = v0.W;
+        M[0][1] = v1.X; M[1][1] = v1.Y; M[2][1] = v1.Z; M[3][1] = v1.W;
+        M[0][2] = v2.X; M[1][2] = v2.Y; M[2][2] = v2.Z; M[3][2] = v2.W;
+        M[0][3] = v3.X; M[1][3] = v3.Y; M[2][3] = v3.Z; M[3][3] = v3.W;
+    }
 
     Mat4 operator*(const Mat4& left, const Mat4& right)
     {
@@ -107,23 +108,34 @@ namespace RGS
         {
             for (int j = 0; j < 4; j++)
             {
+                res.M[i][j] = 0;
                 for (int k = 0; k < 4; k++)
                 {
-                    res.M[i][j] = left.M[i][k] * right.M[k][j];
+                    res.M[i][j] += left.M[i][k] * right.M[k][j];
                 }
             }
         }
         return res;
-    };
+    }
+
 
     Mat4& operator*=(Mat4& left, const Mat4& right)
     {
         return left * right;
-    };
+    }
 
     Mat4 Mat4Identity()
     {
         return Mat4({ 1,0,0,0 }, { 0,1,0,0 }, { 0,0,1,0 }, { 0,0,0,1 });
+    }
+
+    Mat4 Mat4Translate(float tx, float ty, float tz)
+    {
+        Mat4 m = Mat4Identity();
+        m.M[0][3] = tx;
+        m.M[1][3] = ty;
+        m.M[2][3] = tz;
+        return m;
     }
 
     Mat4 Mat4Scale(float sx, float sy, float sz)
@@ -134,17 +146,7 @@ namespace RGS
         m.M[1][1] = sy;
         m.M[2][2] = sz;
         return m;
-    };
-
-    Mat4 Mat4Translate(float tx, float ty, float tz)
-    {
-        Mat4 m = Mat4Identity();
-        ASSERT(tx != 0.0f && ty != 0.0f && tz != 0.0f);
-        m.M[0][3] = tx;
-        m.M[1][3] = ty;
-        m.M[2][3] = tz;
-        return m;
-    };
+    }
 
     Mat4 Mat4RotateX(float angle)
     {
@@ -156,7 +158,7 @@ namespace RGS
         m.M[2][1] = s;
         m.M[2][2] = c;
         return m;
-    };
+    }
 
     Mat4 Mat4RotateY(float angle)
     {
@@ -168,7 +170,7 @@ namespace RGS
         m.M[0][2] = s;
         m.M[0][0] = c;
         return m;
-    };
+    }
 
     Mat4 Mat4RotateZ(float angle)
     {
@@ -180,22 +182,22 @@ namespace RGS
         m.M[1][0] = s;
         m.M[1][1] = c;
         return m;
-    };
+    }
 
     Mat4 Mat4LookAt(const Vec3& xAxis, const Vec3& yAxis, const Vec3& zAxis, const Vec3& eye)
     {
         Mat4 m = Mat4Identity();
 
         m.M[0][0] = xAxis.X;
-        m.M[0][1] = yAxis.Y;
-        m.M[0][2] = zAxis.Z;
+        m.M[0][1] = xAxis.Y;
+        m.M[0][2] = xAxis.Z;
 
-        m.M[1][0] = xAxis.X;
+        m.M[1][0] = yAxis.X;
         m.M[1][1] = yAxis.Y;
-        m.M[1][2] = zAxis.Z;
+        m.M[1][2] = yAxis.Z;
 
-        m.M[2][0] = xAxis.X;
-        m.M[2][1] = yAxis.Y;
+        m.M[2][0] = zAxis.X;
+        m.M[2][1] = zAxis.Y;
         m.M[2][2] = zAxis.Z;
 
         m.M[0][3] = -Dot(xAxis, eye);
@@ -203,7 +205,7 @@ namespace RGS
         m.M[2][3] = -Dot(zAxis, eye);
 
         return m;
-    };
+    }
 
     Mat4 Mat4LookAt(const Vec3& eye, const Vec3& target, const Vec3& up)//eye是视点，target是目标点，up是上方向
     {
@@ -226,7 +228,7 @@ namespace RGS
         m.M[3][2] = -1;
         m.M[3][3] = 0;
         return m;
-    };
+    }
 
     float Lerp(const float start, const float end, const float t)
     {   
@@ -234,6 +236,11 @@ namespace RGS
     }
 
     Vec3 Lerp(const Vec3& start, const Vec3& end, const float t)
+    {
+        return end * t + start * (1.0f - t);
+    }
+
+    Vec4 Lerp(const Vec4& start, const Vec4& end, const float t)
     {
         return end * t + start * (1.0f - t);
     }

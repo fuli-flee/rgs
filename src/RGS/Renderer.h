@@ -21,16 +21,30 @@ namespace RGS
 		Triangle() = default;
 	};
 
+	enum class DepthFuncType
+	{
+		LESS,
+		LEQUAL,
+		ALWAYS,
+	};
+
 	template<typename vertex_t, typename uniforms_t, typename varyings_t>//vertex为输入顶点类型, uniforms为顶点着色器所需的uniform变量, varyings为输出变量
 	struct Program
 	{
+		bool EnableDepthTest = true;
+		bool EnableWriteDepth = true;
+		bool EnableBlend = true;
+		bool EnableDoubleSided = false;
+
+		DepthFuncType DepthFunc = DepthFuncType::LESS;
+
 		using vertex_shader_t = void (*)(varyings_t&, const vertex_t&, const uniforms_t&);//(*)此为函数指针
 		vertex_shader_t VertexShader;//顶点着色器
 
 		using fragment_shader_t = Vec4(*) (bool& discard, const varyings_t&, const uniforms_t&);//discard为片段是否丢弃的标志, 若为true, 则丢弃此片段
 		fragment_shader_t FragmentShader;//片段着色器
 
-		Program(const vertex_shader_t vertex_shader,const fragment_shader_t fragment_shader)
+		Program(const vertex_shader_t vertex_shader, const fragment_shader_t fragment_shader)
 			: VertexShader(vertex_shader), FragmentShader(fragment_shader) {}
 	};
 
@@ -57,7 +71,8 @@ namespace RGS
 		static bool IsVertexVisible(const Vec4& clipPos);
 		static bool IsInsidePlane(const Vec4& clipPos, const Plane plane);
 		static bool IsInsideTriangle(float(&weights)[3]);
-		
+		static bool IsBackFacing(const Vec4& a, const Vec4& b, const Vec4& c);
+		static bool PassDepthTest(const float writeDepth, const float fDepth, const DepthFuncType depthFunc); 
 
 		static float GetIntersectRatio(const Vec4& prev, const Vec4& curr, const Plane plane);
 		static BoundingBox GetBoundingBox(const Vec4(&fragCoords)[3], const int width, const int height);
@@ -78,15 +93,32 @@ namespace RGS
 		}
 
 		template<typename varyings_t>
-		static void LerpVaryings(varyings_t& out, const varyings_t(&varyings)[3], float(&weights)[3]) 
-		{
+		static void LerpVaryings(varyings_t& out, 
+			const varyings_t(&varyings)[3], 
+			float(&weights)[3],
+			const int width,
+			const int height)
+		{	
+			out.ClipPos =	varyings[0].ClipPos * weights[0] +
+							varyings[1].ClipPos * weights[1] +
+							varyings[2].ClipPos * weights[2];
+
+			out.NdcPos = out.ClipPos / out.ClipPos.W;
+			out.NdcPos.W = 1.0f / out.ClipPos.W;
+
+			out.FragPos.X = ((out.NdcPos.X + 1.0f) * 0.5f * width);
+			out.FragPos.Y = ((out.NdcPos.Y + 1.0f) * 0.5f * height);
+			out.FragPos.Z = (out.NdcPos.Z + 1.0f) * 0.5f;
+			out.FragPos.W = out.NdcPos.W;
+
+			constexpr uint32_t floatOffset = sizeof(Vec4) * 3 / sizeof(float);
 			constexpr uint32_t floatNum = sizeof(varyings_t) / sizeof(float);
 			float* v0 = (float*)&varyings[0];
 			float* v1 = (float*)&varyings[1];
 			float* v2 = (float*)&varyings[2];
 			float* outFloat = (float*)&out;
 
-			for (int i = 0; i < (int)floatNum; i++)
+			for (int i = floatOffset; i < (int)floatNum; i++)
 			{
 				outFloat[i] = v0[i] * weights[0] + v1[i] * weights[1] + v2[i] * weights[2];
 			}
@@ -197,12 +229,12 @@ namespace RGS
 			}
 		}
 
-		template<typename varyings_t,typename uniforms_t,typename vertex_t>
+		template<typename vertex_t, typename uniforms_t, typename varyings_t>
 		static void ProcessPixel(Framebuffer& framebuffer,
 									const int x,
 									const int y,
-									const varyings_t& varyings,
 									const Program<vertex_t, uniforms_t, varyings_t>& program,
+									const varyings_t& varyings,
 									const uniforms_t& uniforms)
 		{
 			bool discard = false;
@@ -218,14 +250,35 @@ namespace RGS
 			color.W = Clamp(color.W, 0.0f, 1.0f);
 
 			framebuffer.SetColor(x, y, color);
+
+			 if (program.EnableWriteDepth)
+			 {
+                float depth = varyings.FragPos.Z;
+                framebuffer.SetDepth(x, y, depth);
+			 }
 		}
 
-		template<typename varyings_t,typename uniforms_t,typename vertex_t>
+
+		//计算屏幕坐标系中点的权重
+		template<typename vertex_t, typename uniforms_t, typename varyings_t>
 		static void RasterizeTriangle(Framebuffer& framebuffer,
 									const Program<vertex_t, uniforms_t, varyings_t>& program,//program将会存储片段着色器的相关信息
 									const varyings_t(&varyings)[3],
 									const uniforms_t& uniforms)
 		{
+			if (!program.EnableDoubleSided)
+			{
+				bool isBackFacing = false;
+				isBackFacing = IsBackFacing(varyings[0].NdcPos, varyings[1].NdcPos, varyings[2].NdcPos);
+				if (isBackFacing)
+				{
+					return;
+				}
+			}
+
+			int width = framebuffer.GetWidth();
+			int height = framebuffer.GetHeight();
+
 			Vec4 fragCoords[3];
 			fragCoords[0] = varyings[0].FragPos;
 			fragCoords[1] = varyings[1].FragPos;
@@ -245,9 +298,21 @@ namespace RGS
 						continue;
 
 					varyings_t pixVaryings;
-					LerpVaryings(pixVaryings, varyings, weights);
+					LerpVaryings(pixVaryings, varyings, weights,width,height);
 
-					ProcessPixel(framebuffer, x, y, pixVaryings, program, uniforms);
+				
+					if (program.EnableDepthTest)
+					{
+						float depth = pixVaryings.FragPos.Z;
+						float fDepth = framebuffer.GetDepth(x, y);
+						DepthFuncType depthFunc = program.DepthFunc;
+						if (!PassDepthTest(depth, fDepth, depthFunc))
+						{
+							continue;
+						}
+					}
+
+					ProcessPixel(framebuffer, x, y,  program, pixVaryings, uniforms);
 				}
 			}
 
@@ -270,9 +335,9 @@ namespace RGS
 	public:
 		template<typename vertex_t, typename uniforms_t, typename varyings_t>
 		static void Draw(Framebuffer& framebuffer,
-						const Program<vertex_t, uniforms_t, varyings_t>& program, //program用于指定顶点着色器
-						const Triangle<vertex_t>& triangle, 
-						const uniforms_t& uniforms)
+						 const Program<vertex_t, uniforms_t, varyings_t>& program, //program用于指定顶点着色器
+						 const Triangle<vertex_t>& triangle, 
+						 const uniforms_t& uniforms)
 		{
 			static_assert(std::is_base_of_v<VertexBase, vertex_t>, "vertex_t 必须继承自 RGS::VertexBase");
 			static_assert(std::is_base_of_v<VaryingsBase, varyings_t>, "varyings_t 必须继承自 RGS::VaryingsBase");
@@ -306,4 +371,5 @@ namespace RGS
 		}
 	};
 } 
+
 

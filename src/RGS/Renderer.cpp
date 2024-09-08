@@ -66,6 +66,30 @@ namespace RGS{
 		return weights[0] >= -EPSILON && weights[1] >= -EPSILON && weights[2] >= -EPSILON;
 	 }
 
+	 bool Renderer::IsBackFacing(const Vec4& a, const Vec4& b, const Vec4& c)
+	 {
+		 float signedArea = a.X * b.Y + a.Y * b.X +
+							b.X * c.Y + b.Y * c.X +
+							c.X * a.Y + c.Y * a.X;
+		 return signedArea <= 0; 
+	 }
+
+	 bool Renderer::PassDepthTest(const float writeDepth, const float fDepth, const DepthFuncType depthFunc)
+	 {
+		 switch (depthFunc)
+		 {
+		 case DepthFuncType::LESS:
+			 return fDepth - writeDepth > EPSILON;
+		 case DepthFuncType::LEQUAL:
+			 return fDepth - writeDepth >= -EPSILON;
+		 case DepthFuncType::ALWAYS:
+			 return true;
+		 default:
+			 return false;
+		 }
+	 }
+
+	 //GetIntersectRatioy函数用于计算当前片段与上一片段的交点在屏幕空间中的比例
 	 float Renderer::GetIntersectRatio(const Vec4& prev, const Vec4& curr, const Plane plane)
 	{
 		switch (plane)
@@ -90,6 +114,7 @@ namespace RGS{
 		}
 	}
 
+	 //
 	 void Renderer::CalculateWeights(float(&screenWeights)[3],
 									 float(&weights)[3],
 									 const Vec4(&fragCoords)[3],

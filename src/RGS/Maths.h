@@ -35,6 +35,8 @@ namespace RGS
 
 		constexpr Vec4()
 			: X(0.0f), Y(0.0f), Z(0.0f), W(0.0f) {}
+		constexpr Vec4(float val)
+			: X(val), Y(val), Z(val), W(val) {};	
 		constexpr Vec4(float x, float y, float z, float w)
 			: X(x), Y(y), Z(z), W(w) {}
 		constexpr Vec4(const Vec3& vec3, float w)
@@ -125,7 +127,8 @@ namespace RGS
 	Mat4 Mat4RotateX(float angle);
 	Mat4 Mat4RotateY(float angle);
 	Mat4 Mat4RotateZ(float angle);
-	Mat4 Mat4LookAt(const Vec3& xAxis, const Vec3& yAxis, const Vec3& zAxis, const Vec3& eye);//Axis: 相机的方向，eye: 眼睛的位置
+	Mat4 Mat4LookAt(const Vec3& xAxis, const Vec3& yAxis, const Vec3& zAxis, const Vec3& eye);
+	Mat4 Mat4LookAt(const Vec3& eye, const Vec3& target, const Vec3& up);//Axis: 相机的方向，eye: 眼睛的位置
 	Mat4 Mat4Perspective(float fovy, float aspect, float near, float far);	
 	
 	float Lerp(const float start, const float end, const float t);
